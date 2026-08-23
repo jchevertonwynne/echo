@@ -7,12 +7,27 @@
 package main
 
 import (
+	_ "embed"
 	"encoding/json"
 	"flag"
 	"log"
 	"net/http"
 	"strings"
 )
+
+// echo returns JSON, so there is no HTML head to declare a favicon in. A
+// browser looking at the response therefore falls back to requesting
+// /favicon.ico, which is why the same SVG is served at both paths — browsers
+// honour the Content-Type over the file extension.
+//
+//go:embed icon.svg
+var iconSVG []byte
+
+func serveIcon(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "image/svg+xml")
+	w.Header().Set("Cache-Control", "public, max-age=86400")
+	w.Write(iconSVG)
+}
 
 func main() {
 	addr := flag.String("addr", ":8080", "listen address")
@@ -23,6 +38,8 @@ func main() {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.Write([]byte("ok\n"))
 	})
+	mux.HandleFunc("GET /icon.svg", serveIcon)
+	mux.HandleFunc("GET /favicon.ico", serveIcon)
 	mux.HandleFunc("GET /{$}", handleEcho)
 
 	log.Printf("echo listening on %s", *addr)

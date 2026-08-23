@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+	<rect width="192" height="192" rx="32" fill="#1d2b3a"/>
+	<!-- Out and back: what the service does is return what it was sent. Two
+	     solid arrows rather than one plus a thin return stroke, because at
+	     16px a hairline disappears and anything faint turns to mud. -->
+	<path d="M44 62 L104 62 L104 42 L152 76 L104 110 L104 90 L44 90 Z" fill="#7fd4ff"/>
+	<path d="M148 130 L88 130 L88 150 L40 116 L88 82 L88 102 L148 102 Z" fill="#7fd4ff" opacity="0.5"/>
+</svg>
