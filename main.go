@@ -7,6 +7,7 @@
 package main
 
 import (
+	"context"
 	_ "embed"
 	"encoding/json"
 	"flag"
@@ -15,6 +16,7 @@ import (
 	"strings"
 
 	"echo/internal/metrics"
+	"echo/internal/tracing"
 )
 
 // echo returns JSON, so there is no HTML head to declare a favicon in. A
@@ -33,7 +35,17 @@ func serveIcon(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	addr := flag.String("addr", ":8080", "listen address")
+	otelEndpoint := flag.String("otel-endpoint", "", "host:port of an OTLP/gRPC trace collector; tracing is disabled if empty")
 	flag.Parse()
+
+	// Best-effort: this app doesn't handle SIGTERM, so on a pod delete this
+	// shutdown func never actually runs and the last batch of spans is
+	// lost. Fine for this app's traffic volume.
+	shutdownTracing, err := tracing.Init(context.Background(), "echo", *otelEndpoint)
+	if err != nil {
+		log.Fatalf("init tracing: %v", err)
+	}
+	defer shutdownTracing(context.Background())
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
@@ -46,7 +58,8 @@ func main() {
 	mux.Handle("GET /metrics", metrics.Handler())
 
 	log.Printf("echo listening on %s", *addr)
-	if err := http.ListenAndServe(*addr, metrics.Instrument(mux)); err != nil {
+	handler := tracing.Middleware("echo", metrics.Instrument(mux))
+	if err := http.ListenAndServe(*addr, handler); err != nil {
 		log.Fatal(err)
 	}
 }
