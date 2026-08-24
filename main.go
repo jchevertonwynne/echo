@@ -13,6 +13,8 @@ import (
 	"log"
 	"net/http"
 	"strings"
+
+	"echo/internal/metrics"
 )
 
 // echo returns JSON, so there is no HTML head to declare a favicon in. A
@@ -41,9 +43,10 @@ func main() {
 	mux.HandleFunc("GET /icon.svg", serveIcon)
 	mux.HandleFunc("GET /favicon.ico", serveIcon)
 	mux.HandleFunc("GET /{$}", handleEcho)
+	mux.Handle("GET /metrics", metrics.Handler())
 
 	log.Printf("echo listening on %s", *addr)
-	if err := http.ListenAndServe(*addr, mux); err != nil {
+	if err := http.ListenAndServe(*addr, metrics.Instrument(mux)); err != nil {
 		log.Fatal(err)
 	}
 }
