@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	"echo/internal/metrics"
+	"echo/internal/profiling"
 	"echo/internal/tracing"
 )
 
@@ -36,7 +37,10 @@ func serveIcon(w http.ResponseWriter, r *http.Request) {
 func main() {
 	addr := flag.String("addr", ":8080", "listen address")
 	otelEndpoint := flag.String("otel-endpoint", "", "host:port of an OTLP/gRPC trace collector; tracing is disabled if empty")
+	pprofAddr := flag.String("pprof-addr", ":6060", "listen address for pprof debug endpoints; never expose this outside the cluster")
 	flag.Parse()
+
+	go profiling.ListenAndServe(*pprofAddr)
 
 	// Best-effort: this app doesn't handle SIGTERM, so on a pod delete this
 	// shutdown func never actually runs and the last batch of spans is
